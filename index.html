@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vue</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./main.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="maincontent">
+      <div class="up">
+        <div class="container">
+          <h1 class="up__title title">HTML Editor</h1>
+        </div>
+      </div>
+      <div id="editor" class="editor">
+        <div class="editor__toolbar toolbar">
+          <div class="container toolbar__container">
+            <ul class="toolbar__list">
+              <li v-for="(block, ind) in blockData" class="toolbar__item">
+                <block @dragstartblock="dragstartblock" :block="block" :ind="ind" @clickblock="handleClick"></block>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="editor__model">
+          <model :tags="tags"
+          @droppedli="droppedli"
+          @dropped="dropped" 
+          @tagclick="tagclick"
+          @setvalue="setvalue"
+          @clickdelete="clickdelete"
+          @clickupdown="clickupdown"
+          @clickpaste="clickpaste"
+          @clickcopy="clickcopy"></model>
+        </div>
+        <div class="editor__prev">
+          <prev :tags="tags"
+                :tagid="tagid"
+                :tagval="tagval"
+                ></prev>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <script type="text/x-template" id="block">
+    <div class="block" draggable @dragstart="dragstartblock($event, ind)" @click.prevent="$emit('clickblock', block)">
+      <div class="block__img">
+        <svg class="block__icon"  v-html="block.svg" alt="">
+        </svg>
+      </div>
+      <div class="block__title">
+        <h6>{{block.title}}</h6>
+      </div>
+    </div>
+  </script>
+  <script type="text/x-template" id="model">
+    <div class="model" @drop="dropped($event)"
+    @dragover.prevent
+    @dragenter.prevent
+    >
+      <ul class="model__list">
+        <li @drop.stop="droppedli($event, ind)"
+        @dragover.prevent
+        @dragenter.prevent
+        v-for="(tag, ind) in tags" :key="tag.id" class="model__item">
+          <tag :tag="tag" 
+          @tagclick="tagclick"
+          @setvalue="setvalue"
+          @clickdelete="clickdelete"
+          @clickupdown="clickupdown"
+          @clickpaste="clickpaste"
+          @clickcopy="clickcopy"
+      ></tag>
+        </li>
+      </ul>
+     </div>
+  </script>
+  <!-- <script type="text/x-template" id="imag">
+    <img :class=`img${index}`></img>
+  </script>
+  <script type="text/x-template" id="paragraph">
+    <p :class=`paragraph${index}`>{{value}}</p>
+
+  </script>
+  <script type="text/x-template" id="but">
+    <button :class=`but${index}`>{{value}}</button>
+  </script>
+  <script type="text/x-template" id="headline">
+    <h2 :class=`headline${index}`>{{value}}</h2>
+  </script> -->
+  <script type="text/x-template" id="prev">
+    <div class="prev">
+      <button @click="createcode" class="prev__finish" v-text="show? 'Очистить' : 'Создать HTML-код'"></button>
+      <div v-if="show" v-text="string" class="prev__code"></div>
+      <div v-else v-for="(tag, index) in createdtags" :key="index" v-html="tag.html" class="">{{index}}</div>
+    </div>
+  </script>
+  <script type="text/x-template" id="tag">
+    <div class="model__block">
+      <div class="model__btns" :class="tag.active? '_active' : ''">
+        <div class="model__btns-direction">
+          <button class="model__btn model__btn-down" @click.prevent="clickupdown(tag.id, 'down')">
+            <svg class="model__btn-icon"  alt="Arrow down">
+              <use xlink:href="img/sprite.svg#arrow"></use>
+            </svg>
+          </button>
+          <button class="model__btn model__btn-up" @click.prevent="clickupdown(tag.id, 'up')">
+            <svg class="model__btn-icon"  alt="Arrow up">
+              <use xlink:href="img/sprite.svg#arrow"></use>
+            </svg>
+          </button>
+        </div>
+        <div class="model__btns-edit">
+          <button class="model__btn model__btn-paste" @click.prevent="clickpaste(tag.id)">
+            <svg class="model__btn-icon"  alt="Paste">
+              <use xlink:href="img/sprite.svg#paste"></use>
+            </svg>
+          </button>
+          <button class="model__btn model__btn-copy" @click.prevent="clickcopy(tag.id)">
+            <svg class="model__btn-icon"  alt="Copy">
+              <use xlink:href="img/sprite.svg#copy"></use>
+            </svg>
+          </button>
+          <button class="model__btn model__btn-delete" @click.prevent="clickdelete(tag.id)">
+            <svg class="model__btn-icon"  alt="Delete">
+              <use xlink:href="img/sprite.svg#delete"></use>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div  class="block" :class="tag.active? '_active' : ''" @click.prevent="tagclick(tag.id)">
+        <div class="block__img">
+          <svg class="block__icon"  v-html="tag.svg" :alt="tag.name">
+          </svg>
+        </div>
+        <div class="block__title">
+          <h6>{{tag.title}}</h6>
+        </div>
+        <div class="block__input" @click.stop="">
+          <input class="input" v-if="(tag.name === 'image') || (tag.name === 'button')" :placeholder="(tag.name === 'image' && tag.value === '')? 'Можно ввести путь к нужной картинке' : ''" :value="tag.value" type="text" @input="setvalue($event, tag.id)">
+          <textarea class="input" v-else  :value="tag.value" type="text" @input="setvalue($event, tag.id)"></textarea>
+        </div>
+      </div>
+    </div>
+  </script>
+  <script src="main.js"></script>
+</body>
+</html>
